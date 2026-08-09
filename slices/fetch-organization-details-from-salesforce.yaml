@@ -1,0 +1,28 @@
+slice: Fetch Organization Details From Salesforce
+pattern: translation
+actor: System Agent (Salesforce Sync Service)
+sources: [PendingOrganizationRequestsView]
+trigger:
+  description: "Monitors PendingOrganizationRequestsView to process unfulfilled requests."
+external_call:
+  system: Salesforce API
+  action: "GET /services/data/v60.0/sobjects/Account/{salesforceOrgId}"
+internal:
+  event: OrganizationDetailsRecorded
+  tags: [salesforceOrgId]
+  fields:
+    salesforceOrgId: string
+    name: string
+    domain: string
+    employeeCount: int
+    source: string
+    observedAt: datetime
+scenarios:
+  - name: Successfully fetches and records organization details from Salesforce
+    given:
+      - event: OrganizationDetailsRequested
+        data: { salesforceOrgId: "SF-100" }
+    when: { trigger: "Processor reads SF-100 from PendingOrganizationRequestsView and receives 200 OK from Salesforce API" }
+    then:
+      - event: OrganizationDetailsRecorded
+        data: { salesforceOrgId: "SF-100", name: "Acme Inc", domain: "acme.com", employeeCount: 120, source: "Salesforce", observedAt: "2026-07-22T10:00:00Z" }
