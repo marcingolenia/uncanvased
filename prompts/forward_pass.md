@@ -68,7 +68,7 @@ internal: { event: <InternalEvent>, tags: [ ... ], fields: { <field>: <type> } }
 ```
 
 ## Scenarios (only when they add information over the wiring)
-`then` is **exactly one** of `event` or `exception`. A scenario is only worth emitting if it
+`then` is **exactly one** of `event`, `events`, `exception`, or `view` (`view` only on a `state_view` scenario). A scenario is only worth emitting if it
 says something the slice's `command → event` wiring does **not** already imply — i.e. it has at
 least one of: a **given** precondition, **concrete example values**, or an **exception/branch**.
 - A bare happy-path `when → then` with `given: []` and no values is a **tautology** — skip it.
@@ -82,6 +82,7 @@ scenarios:
     when:  { command: <CommandName>, payload: { ... } }   # or trigger/query per pattern
     then:  { event: <EventName>, data: { ... } }
     # OR:  { exception: <ExceptionName>, message: "<...>", emits: none }
+    # OR:  { view: <ViewName>, data: { ... } }   # state_view only (when: { query, key })
 ```
 
 ## Consistency rules (the validator enforces these — don't violate them)

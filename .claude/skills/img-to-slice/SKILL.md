@@ -31,12 +31,13 @@ You convert a photo/screenshot of an **Event Model** into **Uncanvased slices**.
 | Block | Looks like |
 |---|---|
 | Event | yellow/orange sticky, past tense |
-| External event | **pink/red** sticky, or labeled `(External)`, or in an external-system lane |
+| External event | **pink** sticky, or labeled `(External)`, or in an external-system lane |
 | Command | blue sticky, imperative |
 | Read model (view) | green sticky |
 | Processor | ⚙️ cog / gear / robot icon — automated process, no human |
 | UI | wireframe / mockup (fields, buttons, tables) |
 | Note | white sticky — a rule, constraint or comment |
+| Hotspot | **red** sticky — an open question. **Ignore it**: do not transcribe it and do not treat it as an external event |
 
 **Swimlanes:** a lane label next to UI wireframes is the **actor** for slices whose UI sits in it (`Customer`, `Warehouse worker`). A label on an event lane is a bounded context → `context:`. A lane labeled with a foreign system name holds **external** events → `external.system`.
 

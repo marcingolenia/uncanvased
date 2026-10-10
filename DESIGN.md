@@ -212,7 +212,7 @@ scenarios: [ ... ]
 
 **`translation`** — `External Event → Read Model → ⚙️ processor → Command → internal Event`. The canonical anti-corruption boundary: an automation whose chain starts from an external event instead of an internal read model. **Forbids `ui`.** Requires `command` and `event` — like everywhere else, state changes only through a command. The translation's read model is the **only** read model allowed to consume an external event.
 
-**Board notation.** The external event is a **pink/red** sticky, labeled `(External)`, or placed in a swimlane labeled with the foreign system's name. The forward pass maps: lane label / badge → `external.system`, the external sticky → `external.event`, the green box it feeds → `view`, the ⚙️ → `processor`, then `command` and the internal `event`. The internal command/event are named in domain language; the foreign name stays on `external.event`.
+**Board notation.** The external event is a **pink** sticky, labeled `(External)`, or placed in a swimlane labeled with the foreign system's name. The forward pass maps: lane label / badge → `external.system`, the external sticky → `external.event`, the green box it feeds → `view`, the ⚙️ → `processor`, then `command` and the internal `event`. The internal command/event are named in domain language; the foreign name stays on `external.event`.
 
 ```yaml
 pattern: translation
@@ -236,7 +236,7 @@ scenarios: [ ... ]
 
 ### 5.5 Scenarios (typed Given-When-Then)
 
-Scenarios are typed YAML. `then` is **either** an emitted event **or** an exception.
+Scenarios are typed YAML. `then` is **one of** an emitted event (`event` / `events`), an exception, or — on a `state_view` scenario — the expected read-model state (`view`).
 
 ```yaml
 scenarios:
@@ -454,7 +454,7 @@ type Slice =
 2. Every referenced event/view/screen resolves in the derived catalog.
 3. No conflicting field/tag shapes for a shared name (**error**); single-occurrence names (**warn**).
 4. Each event's `tags` are a subset of its `fields`.
-5. Scenario `then` is exactly one of `event`, `events` or `exception`.
+5. Scenario `then` is exactly one of `event`, `events`, `exception` or `view` (`view` only on a `state_view` scenario).
 6. No dependency cycles in the causal graph.
 7. Committed prose matches freshly-rendered prose (**drift error**).
 8. **TODO** — a `state_view` `sources` entry must resolve to an **internal event** in the catalog, never an external one (**error**, "external data must cross via a `translation` slice"). External events appear only as a translation's `external.event`. Enforces information completeness.

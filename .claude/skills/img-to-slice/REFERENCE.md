@@ -81,6 +81,7 @@ scenarios:
     when:  { command: <CommandName>, payload: { ... } }   # state_change / automation / translation
     # or:  { query: <ViewName>, key: { ... } }            # state_view
     then:  { event: <EventName>, data: { ... }, message: "<white note>" }
+    # OR:  { view: <ViewName>, data: { ... } }            # state_view only: expected read-model state
     # OR:  { events: [ { event: <EventName>, data: { ... } }, ... ] }
     # OR:  { exception: <ExceptionName>, message: "<...>", emits: none }
 ```
@@ -105,4 +106,4 @@ A scenario is only worth emitting if it says something the slice's wiring does *
 - `automation` and `translation` both require `command` and the resulting `event` — no event appears without a command.
 - An **external event** appears only as a translation's `external.event`. A `state_view`'s `sources` are internal events only; the only read model that consumes an external event is the one inside a `translation` slice.
 - `event` and `events` are mutually exclusive on a `state_change`; `events` needs a `# warn:`.
-- Scenario `then` is exactly one of `event`, `events`, or `exception`.
+- Scenario `then` is exactly one of `event`, `events`, `exception`, or `view` (`view` only on a `state_view` scenario, paired with `when.query`).
