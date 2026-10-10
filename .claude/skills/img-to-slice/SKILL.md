@@ -14,7 +14,7 @@ You convert a photo/screenshot of an **Event Model** into **Uncanvased slices**.
 3. Attach Given-When-Then sub-diagrams and white sticky notes to their slices.
 4. Write **one slice file per slice** into `slices/` (create the dir if absent). If a slice already exists there, reconcile it first, following **[UPDATE.md](UPDATE.md)**: the user picks update, replace or keep, and any knock-on changes to other existing slices are asked about once.
 5. **Gap review:** check the slices from this board for gaps (e.g. `CarBooked` never updates `AvailableCars`), then walk the user through them one question at a time and apply each accepted fix. Follow **[GAPS.md](GAPS.md)**.
-6. Reply with **only a brief summary**: the files written or changed (path + slice title), one per line; slices kept unchanged at the user's request; the gap tally (fixed / deferred / ignored); deferred section A gaps; and events not yet read by any view. Do **not** echo YAML back.
+6. Reply with **only a brief summary**: the files written or changed (path + slice title), one per line; slices kept unchanged at the user's request; the gap tally (fixed / deferred / ignored); deferred section A gaps; events not yet read by any view; gap-review additions to **redraw on the board**; and the deferred questions as an **agenda for the next modeling session**. Do **not** echo YAML back.
 
 ## Output contract
 

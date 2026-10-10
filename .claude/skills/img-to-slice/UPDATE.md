@@ -31,6 +31,8 @@ No match → write a new file. A match with identical YAML → nothing to do.
 - **Rename** `CarBooked` → `CarReserved`, then ripple (§3)
 - **New**: a different element alongside the old one
 
+For an event, the question warns: "If this slice is already implemented, the events are stored, so a rename is a migration and a contract change. Prefer **New**: add the new event and keep the old one for history."
+
 ## 2. Ask (before the gap review)
 
 For each matched slice whose YAML differs, ask one `AskUserQuestion`:
@@ -39,7 +41,7 @@ For each matched slice whose YAML differs, ask one `AskUserQuestion`:
 - `options`, each with a `preview` showing the diff (`-` / `+` lines):
   1. **Update from board (Recommended):** apply the board's changes, but keep everything the board can't express unless the board contradicts it:
      - `scenarios:` authored in the YAML
-     - nodes marked `# added: gap review`
+     - nodes marked `# added: gap review`. If the board now shows such a node, drop its marker: the board has caught up
      - `# gap-ignored:`, `# todo:` and `# note:` comments
      - `sequence:` if the board shows none
 

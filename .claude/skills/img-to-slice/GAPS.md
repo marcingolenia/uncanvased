@@ -44,7 +44,7 @@ An event no read model reads yet is **not** a gap: facts are kept for questions 
 11. **Event → event** `[event-to-event]`: fix by inserting the command (and its trigger) between the two events.
 
 **E. Specs and smells**
-12. **No spec** `[no-spec]`: a `state_change` slice has no scenario beyond the trivial happy path. Ask "What must be true first, or what makes this fail?" Recommended option: `Defer`. Skip it when `[untested-constraint]` already applies to the slice.
+12. **No spec** `[no-spec]`: a `state_change` slice has no scenario beyond the trivial happy path. Skip it when `[untested-constraint]` already applies to the slice. Ask **once** for all such slices: one multi-select `AskUserQuestion` listing them, "Which slices do you want to spec now (what must be true first, or what makes it fail)?" Ticked slices get one follow-up each; the rest are deferred together.
 13. **Untested constraint** `[untested-constraint]`: a slice has `constraints:` but no scenario that covers the rejection branch. Fix: propose a failure scenario. Ask only when the constraint implies a concrete rejection.
 14. **Mixed-actor screen** `[mixed-actor-screen]`: one screen issues commands that belong to different actor lanes. A screen with several buttons for one actor is fine. Fix: split it into one screen per actor.
 15. **Naming** `[naming]`: an event is not in past tense, a command is not imperative, or a translation's internal event carries the foreign system's name. Fix: propose a rename and apply it everywhere the name appears.
@@ -70,20 +70,20 @@ Then ask **one `AskUserQuestion` call per gap**, in catalogue order:
 - `options` (2–4), with a `preview` showing the exact YAML change (the lines added or changed, and the file name):
   1. the recommended fix, labeled `… (Recommended)`
   2. an alternative fix, if one exists
-  3. `Defer`: leave a `# todo: <slug>: <gap>` comment on the affected node (same placement rule as below)
+  3. `Defer`: leave a `# todo: <slug>: <question for the business>` comment on the affected node (same placement rule as below). Phrase it as the question to bring to the next modeling session, e.g. `# todo: missing-reverse: What happens when a car is returned late?`
   4. `Not a gap` (not offered for section A, except `[missing-projection]`): leave a `# gap-ignored: <slug>` comment so it isn't asked again. For a gap with no node yet (e.g. `[missing-reverse]`), put it on the event that starts the state: `CarBooked  # gap-ignored: missing-reverse`
 
 The user can always pick "Other" and describe their own fix. Apply it if it is unambiguous; otherwise ask a single follow-up.
 
 Apply each answer **immediately**, before asking the next question. Later questions can depend on earlier fixes, so re-check the queue: drop gaps that are already resolved, and add any new gaps an accepted fix introduces (e.g. a new slice whose screen has no read model).
 
-Deferred section A gaps are listed in every final summary until resolved.
+Deferred section A gaps are listed in every final summary until resolved. All deferred questions from this run are grouped in the summary as an **agenda for the next modeling session**.
 
 If `AskUserQuestion` is not available (non-interactive run), skip the wizard. Instead, write `slices/GAPS.md` listing each gap with its evidence and recommended fix.
 
 ## 3. Applying fixes
 
-- Every node a fix adds or changes gets a trailing `# added: gap review`. This keeps it distinguishable from what the board showed. To mark a single item in a one-line list (e.g. `sources: [A, B]`), rewrite that list one item per line first.
+- Every node a fix adds or changes gets a trailing `# added: gap review`. This keeps it distinguishable from what the board showed, and the final summary lists these nodes under **redraw on the board**. To mark a single item in a one-line list (e.g. `sources: [A, B]`), rewrite that list one item per line first.
 - A new slice gets its own file, named by the normal filename rule, with `# added: gap review` on the `slice:` line. Pick its `pattern` by the usual classification rules.
 - All [REFERENCE.md](REFERENCE.md) consistency rules apply. A renamed or reshaped event, view or command must change **identically in every slice** that uses it.
 - A fix may edit a slice file that existed before this run only if the question named that file in its preview. See also [UPDATE.md](UPDATE.md).
