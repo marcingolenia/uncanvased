@@ -58,6 +58,6 @@ Without `AskUserQuestion`, write the gaps to `slices/GAPS.md` instead.
 
 ## Applying fixes
 
-- Mark each added or changed node `# added: gap review` (rewrite one-line lists one item per line first). New slices get their own file with the marker on `slice:`.
+- Mark each added or changed node `# added: gap review` (rewrite one-line lists one item per line first). New slices get their own file with the marker on `slice:` and the next free `id`.
 - Follow [REFERENCE.md](REFERENCE.md) consistency rules; a changed name or shape changes in every slice that uses it.
 - Edit a pre-existing file only if the question's preview named it.

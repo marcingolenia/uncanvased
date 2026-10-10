@@ -6,13 +6,16 @@ Include only what the image shows.
 
 ```yaml
 slice: <title>                # required
+id: <int>                     # required; stable slice id, see below
 pattern: state_change|state_view|automation|translation   # required
 actor: <role | System Agent | service name>                # required; state_view: only if a UI reads it
 context: <bounded context>    # only if the event lane is labeled
 sequence: <int>               # see below
 ```
 
-`sequence`: left-to-right board position in steps of 10; a drawn order number wins. On update keep the existing value (in fragment mode always, unless a number is drawn). A new slice takes a free value between its neighbours (e.g. 25), producer before consumer; omit if it has none.
+`id`: the slice's permanent identity, drawn as a corner badge on every element of the slice. Assigned once: a badge on the board wins; otherwise the next free number (highest `id` in `slices/` + 1), handed out left to right. Never renumber, never reuse an id, even after a slice is deleted. Renaming or moving a slice keeps its `id`.
+
+`sequence`: left-to-right board position in steps of 10; a drawn order number wins (an order number, not an id badge). On update keep the existing value (in fragment mode always, unless a number is drawn). A new slice takes a free value between its neighbours (e.g. 25), producer before consumer; omit if it has none.
 
 ## Per-pattern body
 

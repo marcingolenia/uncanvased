@@ -15,7 +15,7 @@ The YAML is the source of truth. Write only YAML.
 4. Write one file per slice into `slices/` using the [REFERENCE.md](REFERENCE.md) templates. Reconcile existing slices first ([UPDATE.md](UPDATE.md)).
 5. Run the gap review ([GAPS.md](GAPS.md)).
 6. Reply with a summary, no YAML:
-   - files written or changed (path + title); slices kept unchanged
+   - files written or changed (`id` + path + title); slices kept unchanged
    - gap tally (fixed / deferred / ignored) and deferred section A gaps, including earlier runs'
    - events not yet read by any view
    - gap-review additions to **redraw on the board**
@@ -25,14 +25,16 @@ The YAML is the source of truth. Write only YAML.
 
 - Raw YAML only: no code fences, no prose.
 - Filename: kebab-case slug of the title + `.yaml` (`Add List` → `slices/add-list.yaml`). No numbering. Same title = same slice. Use `-2`, `-3` only when two different slices in this run share a title.
+- Every slice has a stable `id` ([REFERENCE.md](REFERENCE.md)): never renumbered, never reused.
 - Never overwrite silently: existing files change only via [UPDATE.md](UPDATE.md) or an accepted gap fix.
 - Names: sticky text in PascalCase (`Order Placed` → `OrderPlaced`). Same text, same name. Keep spelling; mark a likely typo `# ?`.
 - Unreadable type → `string`. Illegible value → keep the label, add `# ?`.
-- Badges, stars, `*` or annotations → trailing `# note: <text>`.
+- Slice id badge: a small number in a sticky's corner (as drawn by `slice-to-diagram`) is the slice `id`, not a note and not a `sequence`. `12·13` on a screen means the screen belongs to slices 12 and 13.
+- Other badges, stars, `*` or annotations → trailing `# note: <text>`.
 
 ## Reading the board
 
-Colors are hints, not proof.
+Colors are hints, not proof. Slice id badges are proof: stickies sharing a badge belong to the same slice; a sticky without one is new on the board.
 
 | Block | Looks like |
 |---|---|

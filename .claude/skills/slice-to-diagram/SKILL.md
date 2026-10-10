@@ -32,22 +32,44 @@ python3 .../generate_diagram.py slices/request-organization-details.yaml slices/
    file opens at excalidraw.com or via the Excalidraw VS Code extension. Do
    **not** echo the JSON back.
 4. If the script warns (unknown pattern, off-board reference rendered as a dashed
-   "ghost" box), surface that verbatim — don't silently drop it.
+   "ghost" box, read model sitting right of its reader), surface that verbatim —
+   don't silently drop it.
 
 ## What the board looks like (canonical Event Modeling)
 
-Four horizontal lanes, slices ordered left-to-right along the event timeline:
+Horizontal swimlanes, slices ordered left-to-right along the event timeline:
 
 | Lane | Holds | Color |
 |------|-------|-------|
-| **Wireframes** | UI mockup (screen title, text fields, buttons, output lists) — or a **⚙️ cog + actor** for the processor of an `automation` / `translation` | white / purple |
+| **One per actor** (`Fleet Manager`, `Customer`, `System Agent`, …) | only UI mockups (screen title, text fields, buttons, output lists) and the **⚙️ cog + processor** of an `automation` / `translation` | white / purple |
 | **Commands / Read models** | commands (write) and views (read) | blue / green |
 | **Events** | the event timeline spine | orange |
-| **External systems** | a `translation`'s external event; an `automation`'s `external_call` | red |
+| **One per external system** (`Stripe`, `Salesforce`, …) | an `automation`'s `external_call`; a `translation`'s external event | red |
+
+Actor lanes come from `actor:` in order of first appearance; a `(processor)`
+qualifier is dropped, so all `System Agent (...)` processors share one lane.
+
+**Rules of the board**
+- **Arrows never point left.** A slice that reads an event produced further
+  right gets its own copy of that event in its own columns, drawn hatched and
+  dashed and labelled `(duplicate)`.
+- **Events are the only shared contract.** Commands and read models are drawn
+  once, in their own slice, and never duplicated. A read model drawn right of
+  its reader is a sequencing error: the script warns and draws no arrow.
+- **Every element carries its slice `id`** as a small gray badge in the
+  top-right corner (UI, ⚙️, command, read model, event, external call). A merged
+  screen shows both ids (`12·13`); a duplicated event shows its producer's id.
+  The badge is how `img-to-slice` matches an edited board back to its slice
+  files. Slices without `id:` get no badge.
+- **A screen is one storyboard frame.** A `state_view` whose `ui.screen` equals
+  the next `state_change`'s is drawn as ONE wireframe (read-model outputs +
+  inputs + button) in the `state_change`'s column: view → screen → command.
+  The same screen reappears only at a later moment in time.
 
 Slices are written by the `img-to-slice` skill; its `REFERENCE.md` defines the YAML. A
 `translation` takes two columns (view, then processor chain); a `state_change` with
-several `events` takes one column per event.
+several `events` takes one column per event; a slice with duplicated events gets
+one extra column per duplicate (a `state_view` shares the first with its view).
 
 Ordering: explicit `sequence:` first, then event-dependency (a producer sits left
 of its consumers), then filename. The To-Do-list cycle (a view feeding an

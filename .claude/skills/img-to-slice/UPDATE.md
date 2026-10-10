@@ -9,13 +9,18 @@ If `slices/` is not empty, ask once (`header`: `Input`): **Fragment (Recommended
 Fragment mode only adds or changes:
 - Anything in the YAML but not in the image is kept, unless crossed out on the image or the user removes it.
 - An element cut off by the frame is context: match it to an existing slice by name, or ask. It never becomes a new slice.
-- `actor`, `context` and `sequence` keep existing values unless the image shows them. New slices take them from their lane or neighbours.
+- `id` never changes. `actor`, `context` and `sequence` keep existing values unless the image shows them. New slices take them from their lane or neighbours.
 
 Whole-board mode: what the board omits was removed (still shown in the diff).
 
 ## 1. Match
 
-A slice matches an existing one by filename slug, or by same `pattern` plus same `command.name` (or `view.name` for `state_view`). The latter is a rename; it keeps the old file unless the user picks the new name.
+A slice matches an existing one, in this order:
+1. by **id badge**: the board's corner number equals an existing `id`. This is certain: names, pattern or position may all have changed. A duplicated event carries its producer's id; it matches that slice's event and never forms a slice of its own.
+2. by filename slug;
+3. by same `pattern` plus same `command.name` (or `view.name` for `state_view`). This is a rename; it keeps the old file unless the user picks the new name.
+
+Unbadged stickies are new on the board: attach them to a badged slice they are wired into, or make a new slice with the next free `id`. A badge with no matching file (deleted slice), or one badge on two separate slices, is a conflict: ask.
 
 If a matched slice shows a different name (`CarReserved` vs `CarBooked`), ask **Rename** (then ripple) or **New** (alongside the old one). For events, warn: "If implemented, renaming stored events is a migration. Prefer New."
 
