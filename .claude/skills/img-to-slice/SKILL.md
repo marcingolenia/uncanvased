@@ -1,6 +1,6 @@
 ---
 name: img-to-slice
-description: Convert a photo or screenshot of an Event Model board into Uncanvased YAML slice files, one file per vertical slice. Use when the user supplies an image (Miro, Excalidraw, whiteboard, paper) of an event model and wants slices, or mentions forward-pass, transcribing an event model image, or generating slice YAML from a picture.
+description: Convert a photo or screenshot of an Event Model board into Uncanvased YAML slice files, one file per vertical slice. Use when the user supplies an image (Miro, Excalidraw, whiteboard, paper) of an event model and wants slices, or mentions forward-pass, transcribing an event model image, or generating slice YAML from a picture. After transcribing, runs a question-by-question gap review wizard (missing projections, dead-end events, missing slices, rule violations) to complete the model.
 ---
 
 # Event Model image → Uncanvased slices
@@ -13,7 +13,8 @@ You convert a photo/screenshot of an **Event Model** into **Uncanvased slices**.
 2. Read the swimlanes (see below), then cut the timeline into vertical slices and classify each by `pattern`.
 3. Attach Given-When-Then sub-diagrams and white sticky notes to their slices.
 4. Write **one slice file per slice** into `slices/` (create the dir if absent).
-5. Reply with **only a brief confirmation**: the files written (path + slice title), one per line, plus any `# warn:` / overwrite flags. Do **not** echo YAML back.
+5. **Gap review:** check the whole model for gaps (e.g. `CarBooked` never updates `AvailableCars`), then walk the user through them one question at a time and apply each accepted fix. Follow **[GAPS.md](GAPS.md)**.
+6. Reply with **only a brief summary**: the files written or changed (path + slice title), one per line; any overwrite flags; and the gap tally (fixed / deferred / ignored). Do **not** echo YAML back.
 
 ## Output contract
 
@@ -56,7 +57,7 @@ So both ⚙️ patterns end in a command that produces an event; the difference 
 
 ## Flag, don't fix
 
-Transcribe what is drawn even when it breaks a modeling rule, but add a slice-level `# warn: <rule>` comment so the author sees it:
+During transcription (steps 1–4), transcribe what is drawn even when it breaks a modeling rule — fixes happen only in the gap review, with the user's consent — but add a slice-level `# warn: <rule>` comment so the author sees it:
 
 - An event arrow goes **straight into a command** (no read model + ⚙️ in between) — "don't trigger commands from events".
 - An event arrow goes **straight into another event** — "no event after event".
