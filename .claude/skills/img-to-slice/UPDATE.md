@@ -21,14 +21,11 @@ If a matched slice shows a different name (`CarReserved` vs `CarBooked`), ask **
 
 ## 2. Ask
 
-For each matched slice whose YAML differs, ask one question (`header`: `Update`) naming the slice, the file and the change, with a diff `preview` on each option:
-1. **Update from board (Recommended):** apply the board's changes but keep YAML-only content: scenarios, `# added: gap review` nodes, `# gap-ignored:`, `# todo:` and `# note:` comments, and `sequence:` if the board shows none. Drop an `# added:` marker once the board shows that node.
-   - Fragment mode: show elements missing from the image as `? not on image — kept`, then ask once: keep all (Recommended) or pick which to remove.
-   - A kept scenario referencing a removed or renamed name is `stale`: ask to rewrite or drop it.
-2. **Replace entirely** (whole-board mode only).
-3. **Keep existing.** The slice then counts as existing context in the gap review.
+Fragment mode: apply the board's changes to matched slices without asking, and keep everything absent from the image silently. Ask only about renames (§1), crossed-out elements and conflicts, and about a kept scenario that references a removed or renamed name (`stale`: rewrite or drop). Report applied updates in the summary.
 
-A renamed slice adds **Update and rename file**.
+Whole-board mode: ask one multi-select (`header`: `Update`) listing every matched slice whose YAML differs, with a diff `preview`: "Which slices do you want updated from the board?" Ticked slices get **Update from board**; unticked ones are kept (**Keep existing**, which then counts as existing context in the gap review). A renamed slice adds **Update and rename file**; **Replace entirely** is offered only on request.
+
+**Update from board** applies the board's changes but keeps YAML-only content: scenarios, `# added: gap review` nodes, `# gap-ignored:`, `# todo:` and `# note:` comments, and `sequence:` if the board shows none. Drop an `# added:` marker once the board shows that node. An unreadable or `# ?` board value never replaces an existing value.
 
 ## 3. Ripple
 

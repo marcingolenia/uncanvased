@@ -12,7 +12,7 @@ Skip gaps whose node already carries `# gap-ignored: <slug>` or `# todo: <slug>`
 
 ## Catalogue (ask in this order)
 
-**A. Information flow.** Can be deferred, not dismissed. Exception: `missing-projection` offers `Not a gap`.
+**A. Information flow.** Can be deferred, not dismissed; only `missing-projection` offers `Not a gap`.
 1. `missing-projection`: an event changes what a view shows but isn't in its `sources`. Fix: add it, with `# note: <how it changes the view>` on the `sources` line.
 2. `untraceable-field`: a view field comes from no source event field. Fix: add the field to an event, or add the event.
 3. `unfed-screen`: a UI output has no read model. Fix: add a `state_view` slice, or name the view.
@@ -45,12 +45,12 @@ Start with one line: gap counts per section. Over 12 gaps: first ask **All, one 
 
 Then one `AskUserQuestion` per gap:
 - `header`: short gap kind (≤12 chars).
-- `question`: the evidence plus the question, e.g. "`CarBooked` doesn't update `AvailableCars`, so booked cars stay listed. Add it as a source?"
+- `question`: the evidence plus an open question about the business, e.g. "After `CarBooked`, should the car still appear in `AvailableCars`?" Never phrase it as a yes/no on the agent's own fix.
 - `options`, each with a `preview` of the exact YAML change and file:
-  1. recommended fix `(Recommended)`
+  1. suggested fix; mark it `(Recommended)` only when names or fields on the board prove the gap, not when it rests on domain inference
   2. alternative, if any
   3. `Defer`: `# todo: <slug>: <question for the business>` on the affected node
-  4. `Not a gap`: `# gap-ignored: <slug>`. For a missing slice, put it on the event that starts the state.
+  4. `Not a gap`: `# gap-ignored: <slug>`. Not offered for section A (except `missing-projection`). For a missing slice, put it on the event that starts the state.
 
 Apply "Other" answers if unambiguous; otherwise ask one follow-up. Apply each answer before the next question, and update the queue: drop gaps now resolved, add gaps the fix created.
 

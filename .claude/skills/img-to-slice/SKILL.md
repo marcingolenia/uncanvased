@@ -50,7 +50,7 @@ Swimlanes: a UI lane label is the `actor`; an event lane label is the `context`;
 ## Patterns
 
 - **state_change**: UI → Command → Event.
-- **state_view**: Event(s) → Read Model (→ UI). Every read model box gets its own `state_view` slice, including to-do lists feeding a ⚙️.
+- **state_view**: Event(s) → Read Model (→ UI). Every read model box gets its own `state_view` slice, including to-do lists feeding a ⚙️, except a translation's read model, which lives only inside the translation slice.
 - **automation**: Read Model → ⚙️ → Command → Event.
 - **translation**: External Event → Read Model → ⚙️ → Command → internal Event. Only a translation's read model may consume an external event.
 

@@ -79,11 +79,15 @@ scenarios:
   - name: <what it proves, e.g. "Order fails when items are out of stock">
     given: [ { event: <EventName>, data: { ... } }, { view: <ViewName>, data: { ... } } ]
     when:  { command: <CommandName>, payload: { ... } }   # or { query: <ViewName>, key: { ... } } for state_view
+                                                          # or { processor: <ProcessorName> } for automation / translation
     then:  { event: <EventName>, data: { ... }, message: "<white note>" }
     # or:  { events: [ { event: <EventName>, data: { ... } }, ... ] }
     # or:  { exception: <ExceptionName>, message: "<...>", emits: none }
     # or:  { view: <ViewName>, data: { ... } }            # state_view only
+    # or:  { command: <CommandName>, payload: { ... } }   # automation / translation only
 ```
+
+Automation / translation: `given` holds the trigger (`view`, or `external: { event, data }` for a translation) and any prior events; `then.command` is what the processor issues.
 
 A failure drawn as a yellow event stays an `event`. Emit a scenario only if it adds a precondition, concrete values or a failure; skip a bare happy path. An empty GWT region drawn → `# todo: scenario placeholder drawn, author to complete`, no `scenarios:`.
 
@@ -100,4 +104,4 @@ A failure drawn as a yellow event stays an `event`. Emit a scenario only if it a
 - `state_view` has no `command`; `automation` and `translation` have no `ui` and require `command` + `event`.
 - External events appear only in `external.event`; `sources` are internal events.
 - `event` xor `events`; `events` needs a `# warn:`.
-- `then` is exactly one of `event`, `events`, `exception`, `view` (`view` only with `when.query`).
+- `then` is exactly one of `event`, `events`, `exception`, `view`, `command` (`view` only with `when.query`; `command` only with `when.processor`).
