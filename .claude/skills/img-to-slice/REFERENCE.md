@@ -11,7 +11,8 @@ actor: <role | System Agent | service name>                # required
 context: <bounded context>    # optional; only if the event lane is labeled
 sequence: <int>               # left-to-right position on the board, in steps of 10 (10, 20, 30…);
                               # an explicit order number on the board wins. On update, keep the
-                              # existing value unless the slice moved; a new slice between two
+                              # existing value unless the slice moved (in fragment mode, never
+                              # change an existing value unless an order number is drawn); a new slice between two
                               # others takes a free value between them (e.g. 25). If the image is a
                               # fragment, place new slices relative to their neighbours in slices/
                               # (producer before consumer); omit sequence if there are none
@@ -21,6 +22,7 @@ sequence: <int>               # left-to-right position on the board, in steps of
 
 ```yaml
 # state_change — UI → Command → Event
+pattern: state_change
 ui:
   screen: <name>
   inputs: [ { field: <n>, type: <t>, constraints: [ ... ] } ]
@@ -38,11 +40,13 @@ event:
 constraints: [ "<business rule, prose>" ]   # from white sticky notes on/near the slice
 
 # state_view — Event(s) → Read Model (→ UI)
+pattern: state_view
 sources: [ <EventName>, ... ]         # internal events only
 view: { name: <ViewName>, tags: [ ... ], fields: { <field>: <type> } }
 ui:  { screen: <name>, outputs: [ { name: <n>, type: <t> } ] }   # omit if no UI drawn
 
 # automation — internal Read Model → ⚙️ → Command → Event
+pattern: automation
 trigger: { view: <ViewName> }         # the to-do read model (preferred)
                                       # or { timer: "<desc>" } for a clock-driven cog
                                       # or { event: <EventName> } only if drawn so (+ `# warn:`)
@@ -54,6 +58,7 @@ command: { name: <CommandName>, payload: { <field>: <type> } }
 event: { name: <EventName>, tags: [ ... ], fields: { <field>: <type> } }
 
 # translation — External Event → Read Model → ⚙️ → Command → internal Event
+pattern: translation
 external:
   system: <name>                      # external lane label / badge; `<name>  # inferred` if only "(External)"
   event: <ExternalEvent>              # the pink sticky — keep the foreign system's language

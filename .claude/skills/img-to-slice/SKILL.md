@@ -9,7 +9,7 @@ You convert a photo/screenshot of an **Event Model** into **Uncanvased slices**.
 
 ## Workflow
 
-1. Read the image. **Transcribe only what it shows** — do not invent fields, constraints, or scenarios.
+1. If `slices/` is not empty, first ask whether the image is the whole board or a fragment ([UPDATE.md](UPDATE.md) §0). Read the image. **Transcribe only what it shows** — do not invent fields, constraints, or scenarios.
 2. Read the swimlanes (see below), then cut the timeline into vertical slices and classify each by `pattern`.
 3. Attach Given-When-Then sub-diagrams and white sticky notes to their slices.
 4. Write **one slice file per slice** into `slices/` (create the dir if absent). If a slice already exists there, reconcile it first, following **[UPDATE.md](UPDATE.md)**: the user picks update, replace or keep, and any knock-on changes to other existing slices are asked about once.
