@@ -1,13 +1,13 @@
 ---
 name: slice-to-diagram
-description: Render Uncanvased slice YAML files into a canonical Event Modeling diagram as an Excalidraw board (.excalidraw), with UI wireframe mockups (text fields, buttons, lists) and a cog+actor node for automated processes. Use when the user has slice YAML (in slices/ or named files) and wants a diagram, board, or picture back — the reverse/backward pass — or mentions Excalidraw, visualizing an event model, or turning slices into a diagram.
+description: Render Uncanvased slice YAML files into a canonical Event Modeling board (Adam Dymitruk style) as an Excalidraw file (.excalidraw) — a left-to-right storyboard with actor swimlanes, UI wireframes showing example data, ⚙️ processors, commands and read models with their fields, one event lane per stream, external-system lanes, and each slice's Given/When/Then specs under it. Use when the user has slice YAML (in slices/ or named files) and wants a diagram, board, or picture back — the reverse/backward pass — or mentions Excalidraw, visualizing an event model, or turning slices into a diagram.
 ---
 
-# Uncanvased slices → Event Model diagram (Excalidraw)
+# Uncanvased slices → Event Model board (Excalidraw)
 
-This is the **backward pass**: authored slice YAML → one canonical Event Modeling
-board as an `.excalidraw` file. Layout is produced by a bundled deterministic
-generator — **you run the script, you do not hand-author Excalidraw JSON.**
+This is the **backward pass**: authored slice YAML → one Event Modeling board as an
+`.excalidraw` file. A bundled deterministic generator does the layout — **run the
+script; never hand-author Excalidraw JSON.**
 
 ## Quick start
 
@@ -18,65 +18,62 @@ python3 .claude/skills/slice-to-diagram/scripts/generate_diagram.py slices/ -o b
 `paths` may be a **directory** (scanned for `*.yaml`) and/or **individual slice
 files**; all selected slices land on ONE combined left-to-right timeline.
 
-```bash
-# a hand-picked subset, combined into one board
-python3 .../generate_diagram.py slices/request-organization-details.yaml slices/fetch-organization-details-from-salesforce.yaml -o merge-flow.excalidraw
-```
+| Flag | Effect |
+|---|---|
+| `--compact` | names only, no field lists (big-picture or workshop view) |
+| `--no-specs` | leave out the Given / When / Then area |
 
 ## Workflow
 
-1. Decide the selection: the whole `slices/` folder, or the specific files the
-   user named. Pass exactly those to the script.
-2. Run the generator. It prints the output path and the resolved slice order.
-3. **Report the output path and the slice order** it printed. Tell the user the
-   file opens at excalidraw.com or via the Excalidraw VS Code extension. Do
-   **not** echo the JSON back.
-4. If the script warns (unknown pattern, off-board reference rendered as a dashed
-   "ghost" box, read model sitting right of its reader), surface that verbatim —
-   don't silently drop it.
+1. Decide the selection: the whole `slices/` folder, or the files the user named.
+2. Run the generator. It prints the output path, counts (columns, duplicated
+   events, story hints), the event streams, and the slice order with ids.
+3. **Report** the output path and slice order. The file opens at excalidraw.com
+   or in the Excalidraw VS Code extension. Do **not** echo the JSON.
+4. **Surface every warning verbatim**:
+   - `! off-board reference drawn as ghost`: a name no selected slice produces;
+   - `! read model … sits right of its reader`: a sequencing error;
+   - `~ story: …`: a reader placed before an event that changes it.
+5. If there are story hints, offer to fix the timeline: each hint names the
+   slice to move later (raise its `sequence:`), which removes the duplicate.
+   If no event stream is set, mention that `context:` splits the events lane.
+   Both are modelling decisions, so ask before editing slice files (the
+   `img-to-slice` gap review covers them as `out-of-story` and `no-stream`).
 
-## What the board looks like (canonical Event Modeling)
+## The board
 
-Horizontal swimlanes, slices ordered left-to-right along the event timeline:
+It reads as a storyboard, left to right in time:
 
-| Lane | Holds | Color |
-|------|-------|-------|
-| **One per actor** (`Fleet Manager`, `Customer`, `System Agent`, …) | only UI mockups (screen title, text fields, buttons, output lists) and the **⚙️ cog + processor** of an `automation` / `translation` | white / purple |
-| **Commands / Read models** | commands (write) and views (read) | blue / green |
-| **Events** | the event timeline spine | orange |
-| **One per external system** (`Stripe`, `Salesforce`, …) | an `automation`'s `external_call`; a `translation`'s external event | red |
-
-Actor lanes come from `actor:` in order of first appearance; a `(processor)`
-qualifier is dropped, so all `System Agent (...)` processors share one lane.
+| Lane | Holds |
+|---|---|
+| **One per actor** (`Customer`, `Branch Agent`, `System Agent`, …) | only UI wireframes (with **example data**) and ⚙️ processors |
+| **Commands / Read models** | blue commands and green read models, each with its **fields** (`(tag)` marks DCB tags) |
+| **Events · `<stream>`** | one orange lane per `context:`; events show their fields |
+| **One per external system** (`Stripe`, …) | an automation's `external_call`, a translation's external event |
+| **Specifications** | each slice's Given / When / Then scenarios, under its column |
 
 **Rules of the board**
-- **Arrows never point left.** A slice that reads an event produced further
-  right gets its own copy of that event in its own columns, drawn hatched and
-  dashed and labelled `(duplicate)`.
+- **It tells one story.** Slices follow `sequence:`; a reader sits after the events it reads.
+- **Arrows never point left.** If a view reads an event that happens later, it
+  gets its own hatched `(duplicate)` copy of it, and the script prints a story
+  hint. Duplicates are a smell to fix by reordering, not decoration.
+- **Loops are not story errors.** An event recorded by the view's own consumer
+  (the ⚙️ it triggers, or the button on the screen it feeds) is written on the
+  view as `cleared by …` / `updated by …` instead of an arrow.
 - **Events are the only shared contract.** Commands and read models are drawn
-  once, in their own slice, and never duplicated. A read model drawn right of
-  its reader is a sequencing error: the script warns and draws no arrow.
-- **Every element carries its slice `id`** as a small gray badge in the
-  top-right corner (UI, ⚙️, command, read model, event, external call). A merged
-  screen shows both ids (`12·13`); a duplicated event shows its producer's id.
-  The badge is how `img-to-slice` matches an edited board back to its slice
-  files. Slices without `id:` get no badge.
-- **A screen is one storyboard frame.** A `state_view` whose `ui.screen` equals
-  the next `state_change`'s is drawn as ONE wireframe (read-model outputs +
-  inputs + button) in the `state_change`'s column: view → screen → command.
-  The same screen reappears only at a later moment in time.
+  once, in their own slice.
+- **A screen is one frame.** A read model's screen and the button for the next
+  command are one wireframe when the slices are neighbours (badge `12·13`).
+- **Every element carries its slice `id`** as a corner badge; duplicates carry
+  the producer's id. `img-to-slice` uses the badges to match an edited board
+  back to its files.
+- **Specs are first-class.** Scenarios are drawn under their slice; failures
+  appear as red stickies with the message as a white note.
 
-Slices are written by the `img-to-slice` skill; its `REFERENCE.md` defines the YAML. A
-`translation` takes two columns (view, then processor chain); a `state_change` with
-several `events` takes one column per event; a slice with duplicated events gets
-one extra column per duplicate (a `state_view` shares the first with its view).
+Slices are written by the `img-to-slice` skill; its `REFERENCE.md` defines the YAML.
 
-Ordering: explicit `sequence:` first, then event-dependency (a producer sits left
-of its consumers), then filename. The To-Do-list cycle (a view feeding an
-automation that records an event feeding the same view) is broken deterministically.
+## Details
 
-## Per-pattern mapping, palette, geometry & customization
-
-See **[REFERENCE.md](REFERENCE.md)** — how each `pattern` maps to boxes and
-arrows, the exact colors/coordinates, cross-slice reference handling, and where
-to edit the script to change the layout.
+See **[REFERENCE.md](REFERENCE.md)** for the per-pattern mapping, where example
+data comes from, the duplicate and loop rules, the palette and geometry, and how
+to extend the script.

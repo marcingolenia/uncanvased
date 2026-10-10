@@ -1,6 +1,6 @@
 # Gap review
 
-Review only the slices written in this run. Existing `slices/` files are context: check them before reporting something as missing, never report gaps that involve only them, and never propose deleting a slice because it isn't in the image.
+Review only the slices written in this run (review mode: all of `slices/`). Existing `slices/` files are context: check them before reporting something as missing, never report gaps that involve only them, and never propose deleting a slice because it isn't in the image.
 
 ## Detect
 
@@ -36,12 +36,23 @@ An event no view reads is not a gap; list it in the summary.
 **E. Specs and smells**
 12. `no-spec`: a `state_change` slice has only the trivial happy path. Ask once, as one multi-select of all such slices: "Which do you want to spec now?" Follow up on ticked slices; defer the rest. Skip slices hit by `untested-constraint`.
 13. `untested-constraint`: a constraint implies a rejection no scenario covers. Fix: a failure scenario.
-14. `mixed-actor-screen`: one screen issues commands from different actor lanes. Fix: one screen per actor.
-15. `naming`: event not past tense, command not imperative, or a translation's event named after the foreign system. Fix: rename everywhere.
+14. `todo-spec`: a to-do list view (it triggers a ⚙️, or feeds a screen whose button records an event in its `sources`) has no scenario showing an item leaving it. Ask once, as one multi-select of all such views: "Which to-do lists should get a spec for clearing an item?" Fix per ticked view: a `state_view` scenario, given the adding event + the clearing event (same id), then the view without the item ([REFERENCE.md](REFERENCE.md) Scenarios). Recommend ticking when both events are already in `sources`.
+15. `mixed-actor-screen`: one screen issues commands from different actor lanes. Fix: one screen per actor.
+16. `naming`: event not past tense, command not imperative, or a translation's event named after the foreign system. Fix: rename everywhere.
+
+**F. Story and streams.** The board must read as one story; `slice-to-diagram` draws a duplicate for every event read before it happens.
+17. `out-of-story`: a slice reads an event whose producer has a higher `sequence`, other than an event recorded by its own consumer (the ⚙️ it triggers, or the command behind the button on the screen it feeds). One question per reader, listing its late events: "In the business story, does `<reader>` happen after `<event>`?" Options (no `Recommended`; this is the business's call):
+    - `Move it later`: new `sequence` values after the last producer; move the reader's consumers along so a to-do view stays right before its ⚙️ and a screen's read model right before its command. Preview every changed `sequence`.
+    - `Keep it here`: the view really is read earlier and later events change it (e.g. availability seen at search time). `# gap-ignored: out-of-story` on the `sources` line; the diagram keeps a duplicate.
+    - `Defer`.
+18. `no-stream`: events have no `context` and the board shows no labelled event lanes. Ask once: "Which streams do these events belong to?" Options, each previewing the slice → `context` mapping for every slice that records events:
+    - one stream per business entity whose lifecycle the events record (`Vehicle`, `Booking`, `Rental`, `Payment`);
+    - a coarser grouping by bounded context (`Fleet`, `Reservations`, `Billing`);
+    - `Defer`, or `Not a gap` (one lane: `# gap-ignored: no-stream` on the first slice).
 
 ## Wizard
 
-Start with one line: gap counts per section. Over 12 gaps: first ask **All, one by one (Recommended)** / **Only A–C** / **Report only**.
+Start with one line: gap counts per section. Over 12 gaps: first ask **All, one by one (Recommended)** / **Only A–C and F** / **Report only**.
 
 Then one `AskUserQuestion` per gap:
 - `header`: short gap kind (≤12 chars).
@@ -58,6 +69,6 @@ Without `AskUserQuestion`, write the gaps to `slices/GAPS.md` instead.
 
 ## Applying fixes
 
-- Mark each added or changed node `# added: gap review` (rewrite one-line lists one item per line first). New slices get their own file with the marker on `slice:` and the next free `id`.
+- Mark each added or changed node `# added: gap review` (rewrite one-line lists one item per line first). New slices get their own file with the marker on `slice:`, the next free `id`, and a `sequence` that keeps the story in order (producer before reader).
 - Follow [REFERENCE.md](REFERENCE.md) consistency rules; a changed name or shape changes in every slice that uses it.
 - Edit a pre-existing file only if the question's preview named it.

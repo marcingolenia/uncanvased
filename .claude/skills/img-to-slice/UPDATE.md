@@ -30,6 +30,8 @@ Fragment mode: apply the board's changes to matched slices without asking, and k
 
 Whole-board mode: ask one multi-select (`header`: `Update`) listing every matched slice whose YAML differs, with a diff `preview`: "Which slices do you want updated from the board?" Ticked slices get **Update from board**; unticked ones are kept (**Keep existing**, which then counts as existing context in the gap review). A renamed slice adds **Update and rename file**; **Replace entirely** is offered only on request.
 
+Scenarios drawn on the board (badged spec frames) match existing scenarios of their slice by `name`; a frame with a new name is a new scenario. Wireframe values update `example:`.
+
 **Update from board** applies the board's changes but keeps YAML-only content: scenarios, `# added: gap review` nodes, `# gap-ignored:`, `# todo:` and `# note:` comments, and `sequence:` if the board shows none. Drop an `# added:` marker once the board shows that node. An unreadable or `# ?` board value never replaces an existing value.
 
 ## 3. Ripple
