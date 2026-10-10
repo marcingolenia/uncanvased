@@ -12,15 +12,15 @@ You convert a photo/screenshot of an **Event Model** into **Uncanvased slices**.
 1. Read the image. **Transcribe only what it shows** — do not invent fields, constraints, or scenarios.
 2. Read the swimlanes (see below), then cut the timeline into vertical slices and classify each by `pattern`.
 3. Attach Given-When-Then sub-diagrams and white sticky notes to their slices.
-4. Write **one slice file per slice** into `slices/` (create the dir if absent).
+4. Write **one slice file per slice** into `slices/` (create the dir if absent). If a slice already exists there, reconcile it first, following **[UPDATE.md](UPDATE.md)**: the user picks update, replace or keep, and any knock-on changes to other existing slices are asked about once.
 5. **Gap review:** check the whole model for gaps (e.g. `CarBooked` never updates `AvailableCars`), then walk the user through them one question at a time and apply each accepted fix. Follow **[GAPS.md](GAPS.md)**.
-6. Reply with **only a brief summary**: the files written or changed (path + slice title), one per line; any overwrite flags; and the gap tally (fixed / deferred / ignored). Do **not** echo YAML back.
+6. Reply with **only a brief summary**: the files written or changed (path + slice title), one per line; slices kept unchanged at the user's request; and the gap tally (fixed / deferred / ignored). Do **not** echo YAML back.
 
 ## Output contract
 
 - Each file's entire content is **raw YAML** — nothing else. No fenced code block, no ` ```yaml ` wrapper, no prose.
-- **Filename** = kebab-case slug of the slice title with a **`.yaml`** extension: lowercase, spaces → `-`, drop punctuation (`Add List` → `slices/add-list.yaml`). Never number filenames. On title collision append `-2`, `-3`, ….
-- **Do not overwrite** an existing slice file whose YAML differs — note it in your final summary instead.
+- **Filename** = kebab-case slug of the slice title with a **`.yaml`** extension: lowercase, spaces → `-`, drop punctuation (`Add List` → `slices/add-list.yaml`). Never number filenames. The same title means the same slice (see **[UPDATE.md](UPDATE.md)**). Append `-2`, `-3`, … only when two *different* slices in this run share a title.
+- **Never overwrite silently.** An existing slice file whose YAML differs is changed only through the update questions in UPDATE.md or an accepted gap-review fix.
 - **Names:** event / command / view names are the sticky text in PascalCase, spaces and punctuation dropped (`Order Placed` → `OrderPlaced`, `OrdersAwaiting Packing` → `OrdersAwaitingPacking`). The same sticky text always yields the same name. Keep spelling as drawn; mark a likely typo with `# ?`.
 - Unreadable type → `string`. Illegible value → keep the label and add ` # ?` on that line.
 - Preserve any **badge, `*`, star, or annotation** on a box as a trailing `# note: <text>` on that node.
