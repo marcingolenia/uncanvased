@@ -33,4 +33,4 @@ If a rename or reshape affects existing files outside this run, ask one question
 
 ## Non-interactive
 
-Never overwrite. Keep existing files and report each differing slice as `differs from board, not updated`. Treat changed names as New and flag them. Skip ripple.
+Fragment mode (§0): apply the board's changes to matched slices by the **Update from board** rules (§2), keeping YAML-only content, and report each updated slice. Never ask: treat changed names as New and flag them; leave crossed-out elements, conflicts and `stale` scenarios unchanged and list them in the summary; skip ripple.

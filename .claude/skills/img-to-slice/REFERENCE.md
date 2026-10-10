@@ -7,7 +7,7 @@ Include only what the image shows.
 ```yaml
 slice: <title>                # required
 pattern: state_change|state_view|automation|translation   # required
-actor: <role | System Agent | service name>                # required
+actor: <role | System Agent | service name>                # required; state_view: only if a UI reads it
 context: <bounded context>    # only if the event lane is labeled
 sequence: <int>               # see below
 ```
@@ -68,7 +68,7 @@ event: { name: <InternalEvent>, tags: [ ... ], fields: { <field>: <type> } }
 
 ## Scenarios
 
-GWT sub-diagrams sit below their slice in `GIVEN` / `WHEN` / `THEN` rows. Attach each to the slice whose command or view is in `WHEN`; if unclear, the slice above it.
+GWT sub-diagrams sit below their slice in `GIVEN` / `WHEN` / `THEN` rows. Attach each to the slice whose command is in `WHEN`, or, with no `WHEN` row, whose view or command is in `THEN`; if unclear, the slice above it.
 - Each `GIVEN` sticky → one `given` entry, in order; repeats stay repeated.
 - Extra text in a sticky (`Items: [Item1, Item1]`) → its `data`.
 - A white note beside `THEN` → `message`.
@@ -78,16 +78,15 @@ GWT sub-diagrams sit below their slice in `GIVEN` / `WHEN` / `THEN` rows. Attach
 scenarios:
   - name: <what it proves, e.g. "Order fails when items are out of stock">
     given: [ { event: <EventName>, data: { ... } }, { view: <ViewName>, data: { ... } } ]
-    when:  { command: <CommandName>, payload: { ... } }   # or { query: <ViewName>, key: { ... } } for state_view
-                                                          # or { processor: <ProcessorName> } for automation / translation
+    when:  { command: <CommandName>, payload: { ... } }   # state_change only; state_view / automation / translation have no `when`
     then:  { event: <EventName>, data: { ... }, message: "<white note>" }
     # or:  { events: [ { event: <EventName>, data: { ... } }, ... ] }
     # or:  { exception: <ExceptionName>, message: "<...>", emits: none }
-    # or:  { view: <ViewName>, data: { ... } }            # state_view only
-    # or:  { command: <CommandName>, payload: { ... } }   # automation / translation only
+    # or:  { view: <ViewName>, data: { ... } }            # state_view: Given events → Then view
+    # or:  { command: <CommandName>, payload: { ... } }   # automation / translation: Given to-do view → Then command
 ```
 
-Automation / translation: `given` holds the trigger (`view`, or `external: { event, data }` for a translation) and any prior events; `then.command` is what the processor issues.
+State view: `given` holds the source events; `then.view` is the resulting state. Automation / translation: `given` holds the trigger (`view`, or `external: { event, data }` for a translation) and any prior events; `then.command` is what the processor issues.
 
 A failure drawn as a yellow event stays an `event`. Emit a scenario only if it adds a precondition, concrete values or a failure; skip a bare happy path. An empty GWT region drawn → `# todo: scenario placeholder drawn, author to complete`, no `scenarios:`.
 
@@ -104,4 +103,7 @@ A failure drawn as a yellow event stays an `event`. Emit a scenario only if it a
 - `state_view` has no `command`; `automation` and `translation` have no `ui` and require `command` + `event`.
 - External events appear only in `external.event`; `sources` are internal events.
 - `event` xor `events`; `events` needs a `# warn:`.
-- `then` is exactly one of `event`, `events`, `exception`, `view`, `command` (`view` only with `when.query`; `command` only with `when.processor`).
+- `ui.trigger.command` equals `command.name`.
+- Every name in a scenario (`given`, `when`, `then`) is an event, view or command defined in some slice; `when.command` is this slice's own command, `then.view` its own view, `then.command` its own command.
+- `when` only in `state_change`, where it is required.
+- `then` is exactly one of `event`, `events`, `exception`, `view`, `command` (`view` only in `state_view`; `command` only in `automation` / `translation`).

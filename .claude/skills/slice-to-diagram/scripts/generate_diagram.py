@@ -11,10 +11,10 @@ and written to a single `.excalidraw` file (default: ./board.excalidraw).
 Layout (canonical Event Modeling, colors: blue command / orange event / green
 read model / red external):
 
-    WIREFRAMES  | UI mockup, or a  (cog) + actor for automated processes
+    WIREFRAMES  | UI mockup, or a  (cog) + actor for processors
     CMD / READ  | commands (write, blue)  &  read models (read, green)
     EVENTS      | the orange event timeline spine
-    EXTERNAL    | external systems / API calls (translation slices)
+    EXTERNAL    | external events (translation) and API calls (automation)
 
 Ordering: explicit `sequence:` first, then event-dependency order
 (producer left of consumer), then filename. Cycles (e.g. the To-Do-list pattern)
@@ -81,11 +81,23 @@ class Board:
         self.els = []
         self.by_id = {}
         self._n = 0
+        self.taken = set()     # (col, lane) already holding a box
+        self.overflow = {}     # col -> ghosts stacked below the board
         self.now = int(time.time() * 1000)
 
     def _id(self, prefix="el"):
         self._n += 1
         return f"{prefix}-{self._n}"
+
+    def place(self, col, lane):
+        self.taken.add((col, lane))
+
+    def free_lane(self, col, lanes):
+        for lane in lanes:
+            if (col, lane) not in self.taken:
+                self.place(col, lane)
+                return lane
+        return None
 
     @staticmethod
     def _rand():
@@ -245,9 +257,6 @@ def produced(s):
     for ev in _events(s):
         if isinstance(ev, dict) and ev.get("name"):
             out.append(ev["name"])
-    intern = s.get("internal") or {}
-    if intern.get("event"):
-        out.append(intern["event"])
     view = s.get("view") or {}
     if view.get("name"):
         out.append(view["name"])
@@ -371,12 +380,22 @@ def order_slices(slices):
 # --------------------------------------------------------------------------- #
 # Rendering
 # --------------------------------------------------------------------------- #
+def span(s):
+    """Columns a slice occupies: a translation is view + processor; a
+    state_change with several `events` puts each event in its own column."""
+    if s.get("pattern") == "translation":
+        return 2
+    if s.get("pattern") == "state_change":
+        return max(1, len(_events(s)))
+    return 1
+
+
 def render(slices, board):
     registry = {}          # produced name -> box tuple
-    deferred = []          # (consumer_box, [names], ghost_lane)
+    deferred = []          # (consumer_box, col, [names])
 
     # lane scaffold
-    n = max(len(slices), 1)
+    n = max(sum(span(s) for s in slices), 1)
     width = START_X + n * COL_W + 40
     for lane, y in LANE_Y.items():
         board.text(LABEL_X + 10, y + 8, 220, 24, LANE_TITLE[lane],
@@ -386,30 +405,48 @@ def render(slices, board):
                f"Event Model  —  {len(slices)} slice(s)",
                color="#1e1e1e", size=22, align="left", family=2)
 
-    for col, s in enumerate(slices):
+    col = 0
+    for s in slices:
         pat = s.get("pattern")
         if pat == "state_change":
             _state_change(board, col, s, registry)
         elif pat == "state_view":
             _state_view(board, col, s, registry, deferred)
         elif pat == "automation":
-            _automation(board, col, s, deferred)
+            _automation(board, col, s, registry, deferred)
         elif pat == "translation":
-            _translation(board, col, s, registry, deferred)
+            _translation(board, col, s, registry)
         else:
+            board.place(col, "cmd")
             board.labeled(box_x(col), LANE_Y["cmd"], BOX_W, BOX_H, "ghost",
                           f"{s.get('slice', '?')}\n(pattern: {pat})")
+            print(f"  ! unknown pattern '{pat}' in {s['_file']}", file=sys.stderr)
+        col += span(s)
 
     # second pass: dependency arrows into consumers (+ ghosts for off-board refs)
-    for consumer, names, lane in deferred:
+    for consumer, ccol, names in deferred:
         for name in names:
             src = registry.get(name)
             if src is None:
-                gx = consumer[1] + (BOX_W - 200) // 2
-                src = board.labeled(gx, LANE_Y[lane] + 30, 200, 70, "ghost",
-                                    name, size=13)
+                src = _ghost(board, ccol, name)
                 registry[name] = src
+                print(f"  ! off-board reference drawn as ghost: {name}",
+                      file=sys.stderr)
             board.arrow(src, consumer, dashed=True)
+
+
+def _ghost(board, col, name):
+    """Dashed-gray stand-in for a name no selected slice produces, put in the
+    first free lane of the consumer's column (or below the board)."""
+    lane = board.free_lane(col, ("event", "ext", "cmd"))
+    gx = box_x(col) + (BOX_W - 200) // 2
+    if lane:
+        gy = LANE_Y[lane] + 30
+    else:
+        k = board.overflow.get(col, 0)
+        board.overflow[col] = k + 1
+        gy = LANE_Y["ext"] + LANE_H["ext"] + k * 90
+    return board.labeled(gx, gy, 200, 70, "ghost", name, size=13)
 
 
 def _name_line(head, sub=None):
@@ -470,44 +507,65 @@ def _wireframe(board, col, ui):
 
 
 def _agent(board, col, s):
-    """Cog + actor node in the wireframe lane (automated processes).
+    """Cog + actor node in the wireframe lane (processors).
 
     The cog is drawn as its OWN element in the emoji-capable font (family 2).
     Bound labels use the hand-drawn font (family 1), which has no emoji glyph,
     so an inline ⚙️ there renders as blank tofu — hence the separate element.
     """
+    board.place(col, "wire")
     x = box_x(col)
     y = LANE_Y["wire"] + 10
     w, h = BOX_W, 96
-    actor = s.get("actor", "System Agent")
-    proc = s.get("processor")
+    label = _name_line(s.get("actor", "System Agent"), s.get("processor"))
+    timer = (s.get("trigger") or {}).get("timer")
+    if timer:
+        label += f"\n⏱ {timer}"
     rid = board.rect(x, y, w, h, "auto")
     board.text(x + 14, y + h / 2 - 22, 44, 44, "⚙️", color="#5f3dc4", size=34,
                align="left", valign="middle", family=2)
-    board.text(x + 64, y + 14, w - 76, h - 28, _name_line(actor, proc),
+    board.text(x + 64, y + 14, w - 76, h - 28, label,
                color="#1e1e1e", size=14, align="left", valign="middle", family=2)
     return (rid, x, y, w, h)
 
 
+def _command(board, col, s, default="Command"):
+    board.place(col, "cmd")
+    cmd = s.get("command") or {}
+    return board.labeled(box_x(col), LANE_Y["cmd"], BOX_W, BOX_H,
+                         "command", cmd.get("name", default))
+
+
+def _event(board, col, ev, registry):
+    board.place(col, "event")
+    name = ev.get("name", "Event") if isinstance(ev, dict) else str(ev)
+    ebox = board.labeled(box_x(col), LANE_Y["event"], BOX_W, BOX_H,
+                         "event", name)
+    registry.setdefault(name, ebox)
+    return ebox
+
+
+def _external(board, col, system, detail):
+    board.place(col, "ext")
+    return board.labeled(box_x(col), LANE_Y["ext"], BOX_W, 90, "external",
+                         _name_line(system or "External", detail), size=13)
+
+
 def _state_change(board, col, s, registry):
     ui = s.get("ui") or {}
-    wf = _wireframe(board, col, ui) if ui else None
-    cmd = s.get("command") or {}
-    cbox = board.labeled(box_x(col), LANE_Y["cmd"], BOX_W, BOX_H,
-                         "command", cmd.get("name", s.get("slice", "Command")))
-    prev = cbox
-    for ev in _events(s):
-        name = ev.get("name", "Event") if isinstance(ev, dict) else str(ev)
-        ebox = board.labeled(box_x(col), LANE_Y["event"], BOX_W, BOX_H,
-                             "event", name)
-        board.arrow(prev, ebox)
-        if isinstance(ev, dict) and ev.get("name"):
-            registry.setdefault(ev["name"], ebox)
+    wf = None
+    if ui:
+        board.place(col, "wire")
+        wf = _wireframe(board, col, ui)
+    cbox = _command(board, col, s, s.get("slice", "Command"))
+    for i, ev in enumerate(_events(s)):
+        board.arrow(cbox, _event(board, col + i, ev, registry))
     if wf:
         board.arrow(wf, cbox)
 
 
 def _state_view(board, col, s, registry, deferred):
+    board.place(col, "cmd")
     view = s.get("view") or {}
     vbox = board.labeled(box_x(col), LANE_Y["cmd"], BOX_W, BOX_H,
                          "view", view.get("name", s.get("slice", "View")))
@@ -515,48 +573,49 @@ def _state_view(board, col, s, registry, deferred):
         registry.setdefault(view["name"], vbox)
     ui = s.get("ui") or {}
     if ui:
+        board.place(col, "wire")
         wf = _wireframe(board, col, ui)
         board.arrow(vbox, wf)          # read model feeds the UI
-    deferred.append((vbox, list(s.get("sources") or []), "event"))
+    deferred.append((vbox, col, list(s.get("sources") or [])))
 
 
-def _automation(board, col, s, deferred):
+def _automation(board, col, s, registry, deferred):
+    """Read Model (to-do) ⇢ ⚙️ → Command → Event; an `external_call` sits in the
+    external lane and feeds the recorded event."""
     agent = _agent(board, col, s)
-    cmd = s.get("command") or {}
-    cbox = board.labeled(box_x(col), LANE_Y["cmd"], BOX_W, BOX_H,
-                         "command", cmd.get("name", "Command"))
+    cbox = _command(board, col, s)
     board.arrow(agent, cbox)
-    deferred.append((cbox, consumed(s), "event"))
-
-
-def _translation(board, col, s, registry, deferred):
-    intern = s.get("internal") or {}
-    ext = s.get("external") or {}
+    ebox = None
+    for ev in _events(s)[:1]:
+        ebox = _event(board, col, ev, registry)
+        board.arrow(cbox, ebox)
     call = s.get("external_call") or {}
-    ibox = board.labeled(box_x(col), LANE_Y["event"], BOX_W, BOX_H,
-                         "event", intern.get("event", "Event"))
-    if intern.get("event"):
-        registry.setdefault(intern["event"], ibox)
+    if call:
+        xbox = _external(board, col, call.get("system"), call.get("action"))
+        if ebox:
+            board.arrow(xbox, ebox)
+    deferred.append((agent, col, consumed(s)))
 
-    if call:  # variant B: request-response
-        # Chain reads: source view -> agent (reads To-Do) -> records event; the
-        # external call (in its own lane) feeds the recorded event. Arrows are
-        # routed agent->event and call->event so none crosses the event box.
-        agent = _agent(board, col, s)
-        cbox = board.labeled(box_x(col), LANE_Y["ext"], BOX_W, 90, "external",
-                             _name_line(call.get("system", "External"),
-                                        call.get("action")), size=13)
-        board.arrow(agent, ibox)
-        board.arrow(cbox, ibox)
-        deferred.append((agent, list(s.get("sources") or []), "cmd"))
-    else:     # variant A: event-driven boundary crossing
-        ebox = board.labeled(box_x(col), LANE_Y["ext"], BOX_W, 90, "external",
-                             _name_line(ext.get("system", "External"),
-                                        ext.get("event")), size=13)
-        if s.get("direction") == "outbound":
-            board.arrow(ibox, ebox)
-        else:
-            board.arrow(ebox, ibox)
+
+def _translation(board, col, s, registry):
+    """External Event → Read Model | ⚙️ → Command → internal Event, over two
+    columns: the view and its external event, then the processor chain."""
+    ext = s.get("external") or {}
+    xbox = _external(board, col, ext.get("system"), ext.get("event"))
+    board.place(col, "cmd")
+    view = s.get("view") or {}
+    vbox = board.labeled(box_x(col), LANE_Y["cmd"], BOX_W, BOX_H,
+                         "view", view.get("name", "View"))
+    if view.get("name"):
+        registry.setdefault(view["name"], vbox)
+    board.arrow(xbox, vbox)
+
+    agent = _agent(board, col + 1, s)
+    board.arrow(vbox, agent, dashed=True)
+    cbox = _command(board, col + 1, s)
+    board.arrow(agent, cbox)
+    for ev in _events(s)[:1]:
+        board.arrow(cbox, _event(board, col + 1, ev, registry))
 
 
 # --------------------------------------------------------------------------- #

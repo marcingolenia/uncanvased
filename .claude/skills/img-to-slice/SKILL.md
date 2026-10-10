@@ -19,9 +19,9 @@ The YAML is the source of truth. Write only YAML.
    - gap tally (fixed / deferred / ignored) and deferred section A gaps, including earlier runs'
    - events not yet read by any view
    - gap-review additions to **redraw on the board**
-   - deferred questions as an **agenda for the next modeling session**
+   - deferred questions and hotspots as an **agenda for the next modeling session**
 
-## Output
+## File format
 
 - Raw YAML only: no code fences, no prose.
 - Filename: kebab-case slug of the title + `.yaml` (`Add List` → `slices/add-list.yaml`). No numbering. Same title = same slice. Use `-2`, `-3` only when two different slices in this run share a title.
@@ -43,7 +43,7 @@ Colors are hints, not proof.
 | Processor | ⚙️ cog / gear / robot |
 | UI | wireframe (fields, buttons, tables) |
 | Note | white sticky |
-| Hotspot | red sticky: ignore it |
+| Hotspot | red sticky: an open question, not a block; `# todo: hotspot: <text>` on the nearest node |
 
 Swimlanes: a UI lane label is the `actor`; an event lane label is the `context`; a lane named after a foreign system holds external events (`external.system`).
 
@@ -56,7 +56,7 @@ Swimlanes: a UI lane label is the `actor`; an event lane label is the `context`;
 
 A processor calling a 3rd-party API ("GET Salesforce Account") is an automation with `external_call`, not a translation.
 
-**Actor:** the lane label if drawn. Otherwise `User  # inferred` for `state_change`, and `System Agent  # inferred` (or the ⚙️'s label) for the rest.
+**Actor:** the lane label if drawn. Otherwise `User  # inferred` for `state_change`, and `System Agent  # inferred` (or the ⚙️'s label) for `automation` and `translation`. A `state_view` has an actor only when a UI reads it: that screen's lane label (or `User  # inferred`).
 
 ## Flag, don't fix
 

@@ -40,10 +40,14 @@ Four horizontal lanes, slices ordered left-to-right along the event timeline:
 
 | Lane | Holds | Color |
 |------|-------|-------|
-| **Wireframes** | UI mockup (screen title, text fields, buttons, output lists) — or a **⚙️ cog + actor** for `automation` / request-response `translation` | white / purple |
+| **Wireframes** | UI mockup (screen title, text fields, buttons, output lists) — or a **⚙️ cog + actor** for the processor of an `automation` / `translation` | white / purple |
 | **Commands / Read models** | commands (write) and views (read) | blue / green |
 | **Events** | the event timeline spine | orange |
-| **External systems** | external systems & API calls from `translation` slices | red |
+| **External systems** | a `translation`'s external event; an `automation`'s `external_call` | red |
+
+Slices are written by the `img-to-slice` skill; its `REFERENCE.md` defines the YAML. A
+`translation` takes two columns (view, then processor chain); a `state_change` with
+several `events` takes one column per event.
 
 Ordering: explicit `sequence:` first, then event-dependency (a producer sits left
 of its consumers), then filename. The To-Do-list cycle (a view feeding an
