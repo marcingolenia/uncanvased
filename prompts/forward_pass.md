@@ -25,7 +25,7 @@ Colors are hints, not proof — classify by the boxes and arrows present.
 slice: <human title>          # required
 pattern: state_change|state_view|automation|translation   # required
 actor: <role | System Agent | external service>            # required
-sequence: <int>               # optional; only if the board shows an explicit order number
+sequence: <int>               # left-to-right position on the board, steps of 10; an explicit order number wins
 ```
 
 Actors are rarely drawn. If no swimlane/actor label is present, **infer a default and mark it** rather than guessing per slice:

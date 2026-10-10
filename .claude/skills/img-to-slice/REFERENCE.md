@@ -9,7 +9,12 @@ slice: <human title>          # required
 pattern: state_change|state_view|automation|translation   # required
 actor: <role | System Agent | service name>                # required
 context: <bounded context>    # optional; only if the event lane is labeled
-sequence: <int>               # optional; only if the board shows an explicit order number
+sequence: <int>               # left-to-right position on the board, in steps of 10 (10, 20, 30…);
+                              # an explicit order number on the board wins. On update, keep the
+                              # existing value unless the slice moved; a new slice between two
+                              # others takes a free value between them (e.g. 25). If the image is a
+                              # fragment, place new slices relative to their neighbours in slices/
+                              # (producer before consumer); omit sequence if there are none
 ```
 
 ## Per-pattern body

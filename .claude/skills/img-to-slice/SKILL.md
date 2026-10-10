@@ -1,6 +1,6 @@
 ---
 name: img-to-slice
-description: Convert a photo or screenshot of an Event Model board into Uncanvased YAML slice files, one file per vertical slice. Use when the user supplies an image (Miro, Excalidraw, whiteboard, paper) of an event model and wants slices, or mentions forward-pass, transcribing an event model image, or generating slice YAML from a picture. After transcribing, runs a question-by-question gap review wizard (missing projections, dead-end events, missing slices, rule violations) to complete the model.
+description: Convert a photo or screenshot of an Event Model board into Uncanvased YAML slice files, one file per vertical slice. Use when the user supplies an image (Miro, Excalidraw, whiteboard, paper) of an event model and wants slices, or mentions forward-pass, transcribing an event model image, or generating slice YAML from a picture, or re-parses an updated board. After transcribing, runs a question-by-question gap review wizard (missing projections, untraceable fields, missing slices, rule violations) to complete the model.
 ---
 
 # Event Model image → Uncanvased slices
@@ -13,8 +13,8 @@ You convert a photo/screenshot of an **Event Model** into **Uncanvased slices**.
 2. Read the swimlanes (see below), then cut the timeline into vertical slices and classify each by `pattern`.
 3. Attach Given-When-Then sub-diagrams and white sticky notes to their slices.
 4. Write **one slice file per slice** into `slices/` (create the dir if absent). If a slice already exists there, reconcile it first, following **[UPDATE.md](UPDATE.md)**: the user picks update, replace or keep, and any knock-on changes to other existing slices are asked about once.
-5. **Gap review:** check the whole model for gaps (e.g. `CarBooked` never updates `AvailableCars`), then walk the user through them one question at a time and apply each accepted fix. Follow **[GAPS.md](GAPS.md)**.
-6. Reply with **only a brief summary**: the files written or changed (path + slice title), one per line; slices kept unchanged at the user's request; and the gap tally (fixed / deferred / ignored). Do **not** echo YAML back.
+5. **Gap review:** check the slices from this board for gaps (e.g. `CarBooked` never updates `AvailableCars`), then walk the user through them one question at a time and apply each accepted fix. Follow **[GAPS.md](GAPS.md)**.
+6. Reply with **only a brief summary**: the files written or changed (path + slice title), one per line; slices kept unchanged at the user's request; the gap tally (fixed / deferred / ignored); deferred section A gaps; and events not yet read by any view. Do **not** echo YAML back.
 
 ## Output contract
 
