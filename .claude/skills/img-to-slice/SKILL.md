@@ -10,47 +10,58 @@ You convert a photo/screenshot of an **Event Model** into **Uncanvased slices**.
 ## Workflow
 
 1. Read the image. **Transcribe only what it shows** — do not invent fields, constraints, or scenarios.
-2. Classify each vertical slice by `pattern` (see below).
-3. Write **one slice file per slice** into `slices/` (create the dir if absent).
-4. Reply with **only a brief confirmation**: the files written (path + slice title), one per line. Do **not** echo YAML back.
+2. Read the swimlanes (see below), then cut the timeline into vertical slices and classify each by `pattern`.
+3. Attach Given-When-Then sub-diagrams and white sticky notes to their slices.
+4. Write **one slice file per slice** into `slices/` (create the dir if absent).
+5. Reply with **only a brief confirmation**: the files written (path + slice title), one per line, plus any `# warn:` / overwrite flags. Do **not** echo YAML back.
 
 ## Output contract
 
-- Each file's entire content is **raw YAML** — nothing else. No fenced code block, no ` ```yaml ` wrapper, no prose. The renderer parses the file as YAML and generates prose separately later.
-- **Filename** = kebab-case slug of the slice title with a **`.yaml`** extension: lowercase, spaces → `-`, drop punctuation (`Add List` → `slices/add-list.yaml`). Filenames do **not** encode order — never number them. On title collision append `-2`, `-3`, ….
-- **Do not overwrite** an existing slice file whose YAML differs without flagging it — note it in your final summary rather than clobbering authored work.
+- Each file's entire content is **raw YAML** — nothing else. No fenced code block, no ` ```yaml ` wrapper, no prose.
+- **Filename** = kebab-case slug of the slice title with a **`.yaml`** extension: lowercase, spaces → `-`, drop punctuation (`Add List` → `slices/add-list.yaml`). Never number filenames. On title collision append `-2`, `-3`, ….
+- **Do not overwrite** an existing slice file whose YAML differs — note it in your final summary instead.
+- **Names:** event / command / view names are the sticky text in PascalCase, spaces and punctuation dropped (`Order Placed` → `OrderPlaced`, `OrdersAwaiting Packing` → `OrdersAwaitingPacking`). The same sticky text always yields the same name. Keep spelling as drawn; mark a likely typo with `# ?`.
 - Unreadable type → `string`. Illegible value → keep the label and add ` # ?` on that line.
-- Preserve any **badge, `*`, star, or annotation** on a box as a trailing `# note: <text>` on that node — never silently drop it.
+- Preserve any **badge, `*`, star, or annotation** on a box as a trailing `# note: <text>` on that node.
 
-## Classify by `pattern` (visual cues; colors are hints, not proof)
+## Reading the board
 
-- **state_change** — UI/screen → **command** (blue) → **event(s)** (orange). The write side.
-- **state_view** — **event(s)** (orange) → **view / read model** (green) → UI. No command. Needs `sources`. A read model projects **only internal events** — every view field must trace to an event on the timeline. If the data comes from an external system, that is a **`translation`** slice, not a source here (see REFERENCE.md).
-- **automation** — no UI/human. Trigger (event | view | timer) → processor → **command**.
-- **translation** — external-system boundary. No UI, no command. A translation takes **one of two forms**; pick by what the board draws:
-  - **Event-driven (boundary event-crossing):** the external system is drawn as its **own swimlane labeled with the system name** (e.g. `Salesforce`) and an event sticky *crosses the boundary arrow*. **Lane label → `external.system`**, the sticky in that lane → `external.event`, the sticky landing in an internal lane → `internal.event`, and the **arrow direction across the boundary → `direction`** (into your system = `inbound`, out = `outbound`). On freehand/paper boards with no lanes, read a **boundary badge** on the event sticky (`↔ Salesforce`, a cloud/box edge) as the system and mark it `# inferred`.
-  - **Request-response (API fetch/translation):** a **system agent/worker reads an internal view (a To-Do list) or handles a trigger, makes an external API call, and records the response directly as an internal domain event** — the classic Event Modeling automation-into-integration loop (e.g. a To-Do view drives a Salesforce REST query that yields `OrganizationDetailsRecorded`). There is **no external event sticky** because the external system does not publish an event onto a bus; it just answers a call. Model the internal source view (if drawn) → `sources`, the outbound call → `external_call` (`system` + `action`, e.g. the endpoint/verb/RPC), and the recorded fact → `internal.event`. Direction is `outbound_request` (you call out) or `inbound_pull` (you poll/fetch in). See REFERENCE.md for the request-response schema variant.
-  - **Both forms** name the `internal.event` in **domain language** (`OrganizationDetailsRecorded`), never after the external system/transport (`OrganizationImported`) — that's the anti-corruption whole point. **Do not invent artificial transport events** (`OrganizationQuerySent`, `OrganizationRecordReturned`) to stand in for a request/response round-trip; the raw API payload translates *straight into* the internal domain event. Keep origin as a `source` field if the domain needs it (see REFERENCE.md).
+**Building blocks (colors are hints, not proof):**
 
-## Common fields (every slice)
+| Block | Looks like |
+|---|---|
+| Event | yellow/orange sticky, past tense |
+| External event | **pink/red** sticky, or labeled `(External)`, or in an external-system lane |
+| Command | blue sticky, imperative |
+| Read model (view) | green sticky |
+| Processor | ⚙️ cog / gear / robot icon — automated process, no human |
+| UI | wireframe / mockup (fields, buttons, tables) |
+| Note | white sticky — a rule, constraint or comment |
 
-```yaml
-slice: <human title>          # required
-pattern: state_change|state_view|automation|translation   # required
-actor: <role | System Agent | external service>            # required
-sequence: <int>               # optional; only if the board shows an explicit order number
-```
+**Swimlanes:** a lane label next to UI wireframes is the **actor** for slices whose UI sits in it (`Customer`, `Warehouse worker`). A label on an event lane is a bounded context → `context:`. A lane labeled with a foreign system name holds **external** events → `external.system`.
 
-Actors are rarely drawn. If no swimlane/actor label is present, **infer a default and mark it `# inferred`** (reserve `# ?` for present-but-illegible labels):
+## Classify by `pattern`
 
-- `state_change` with a UI → the screen's human user (e.g. `User  # inferred`).
-- `state_view` / `automation` → `System Agent  # inferred`.
-- `translation` → the external system on the boundary (e.g. `EmailProvider  # inferred`).
+Every arrow chain on the board is one of four shapes. The canonical chain for each:
 
-**Gear/cog/robot icon in the top swimlane** (⚙️, 🤖, a cog symbol) *in place of* a wireframe/screen is a positive signal that the slice is an **automated process, not a human-driven UI**. Treat it as such: infer `actor: System Agent` (or the **specific service name if one is labeled near the gears**, e.g. `BillingWorker`), and do **not** default the actor to a human user even for a `state_change`. This is an explicit cue, so mark it `# inferred` only when you inferred the *name*; a clearly labeled service name is not inferred. Such a slice is typically `automation` or a request-response `translation` rather than a UI `state_change`.
+- **state_change** — UI → **Command** → **Event**. The only way state changes.
+- **state_view** — **Event(s)** → **Read Model** (→ UI, optional). No command. Every read model box on the board, including the to-do lists that feed a ⚙️, gets its own `state_view` slice.
+- **automation** — internal **Read Model** (to-do list) → ⚙️ → **Command** → **Event**. No human in the loop.
+- **translation** — **External Event** → **Read Model** → ⚙️ → **Command** → **internal Event**. Same as automation, but the chain starts from an external event. The read model is owned by the translation slice (it is the only place an external event may be projected).
+
+So both ⚙️ patterns end in a command that produces an event; the difference is only whether the chain starts from an internal read model (automation) or an external event (translation). A 3rd-party API call made by the processor (e.g. "GET Salesforce Account") is an **automation** with `external_call`, not a translation — there is no external event on the board.
+
+**Actor:** use the lane label when drawn. Otherwise infer and mark `# inferred`: `state_change` → the screen's human user (`User  # inferred`); `state_view` / `automation` / `translation` → `System Agent  # inferred`, or the service name written next to the ⚙️ (not inferred if labeled).
+
+## Flag, don't fix
+
+Transcribe what is drawn even when it breaks a modeling rule, but add a slice-level `# warn: <rule>` comment so the author sees it:
+
+- An event arrow goes **straight into a command** (no read model + ⚙️ in between) — "don't trigger commands from events".
+- An event arrow goes **straight into another event** — "no event after event".
+- A command produces **more than one event** — allowed, but usually a smell.
+- A ⚙️ chain is missing its read model or its resulting event.
 
 ## Per-pattern body, scenarios & rules
 
-For the per-pattern YAML templates, the scenario grammar (when to emit vs skip), and the consistency rules the validator enforces, see **[REFERENCE.md](REFERENCE.md)**. Consult it before writing any slice body.
-
-Write the slice files now, then return the brief confirmation summary.
+For the per-pattern YAML templates, how to read Given-When-Then sub-diagrams and white notes, and the consistency rules the validator enforces, see **[REFERENCE.md](REFERENCE.md)**. Consult it before writing any slice body.

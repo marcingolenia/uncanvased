@@ -193,30 +193,42 @@ ui:
 scenarios: [ ... ]
 ```
 
-**`automation`** — `trigger → processor → Command`. **Forbids `ui`.** No human actor.
+**`automation`** — `Read Model (to-do list) → ⚙️ processor → Command → Event`. **Forbids `ui`.** No human actor. The processor reads a to-do read model (owned by its own `state_view` slice) rather than reacting to an event directly ("don't trigger commands from events"). A 3rd-party API call the processor makes is recorded as `external_call`; the call result still enters the model only through the command → event.
 
 ```yaml
 pattern: automation
-trigger: { event: ToDoItemDue }        # event | view | timer
+trigger: { view: DueItemsView }        # view (preferred) | timer; event only if drawn so (warn)
 processor: SendReminderGear
+external_call: { system: EmailProvider, action: "POST /send" }   # optional
 command:
   name: SendReminder
   payload: { userId: string, itemId: string }
+event:
+  name: ReminderSent
+  tags: [user, item]
+  fields: { userId: string, itemId: string }
 scenarios: [ ... ]
 ```
 
-**`translation`** — `External event ↔ Internal event`. Anti-corruption boundary. **Forbids `ui`/`command`.** This is the **only** way data crosses the system boundary — external reads and writes both go through here, never through a `state_view` source.
+**`translation`** — `External Event → Read Model → ⚙️ processor → Command → internal Event`. The canonical anti-corruption boundary: an automation whose chain starts from an external event instead of an internal read model. **Forbids `ui`.** Requires `command` and `event` — like everywhere else, state changes only through a command. The translation's read model is the **only** read model allowed to consume an external event.
 
-**Board notation.** An external system is drawn as its **own swimlane labeled with the system name** (like an actor lane, for a system you don't own); the event crossing the boundary arrow is the translation. The forward pass maps: lane label → `external.system`, the sticky in that lane → `external.event`, the sticky landing in an internal lane → `internal.event`, and the crossing arrow's direction → `direction` (into your system = `inbound`, out = `outbound`). On freehand/paper boards with no lanes, a boundary **badge** on the event sticky (`↔ Salesforce`, a cloud/box edge) names the system, marked `# inferred`. The reverse renderer draws external systems deterministically as labeled swimlanes; **color is a hint only** (Event Modeling has no canonical external-system color — the lane label and crossing arrow carry the meaning).
+**Board notation.** The external event is a **pink/red** sticky, labeled `(External)`, or placed in a swimlane labeled with the foreign system's name. The forward pass maps: lane label / badge → `external.system`, the external sticky → `external.event`, the green box it feeds → `view`, the ⚙️ → `processor`, then `command` and the internal `event`. The internal command/event are named in domain language; the foreign name stays on `external.event`.
 
 ```yaml
 pattern: translation
-direction: inbound                     # inbound | outbound
 external:
   system: EmailProvider
   event: EmailBounced
-internal:
-  event: UserEmailInvalidated
+view:
+  name: BouncedEmailsToProcess
+  tags: [user]
+  fields: { userId: string, reason: string }
+processor: BounceHandler
+command:
+  name: InvalidateUserEmail
+  payload: { userId: string, reason: string }
+event:
+  name: UserEmailInvalidated
   tags: [user]
   fields: { userId: string, reason: string }
 scenarios: [ ... ]
@@ -387,19 +399,25 @@ scenarios:
 slice: Send Due Reminder
 pattern: automation
 actor: System Agent
-trigger: { event: ToDoItemDue }
+trigger: { view: DueItemsView }
 processor: SendReminderGear
 command:
   name: SendReminder
   payload: { userId: string, itemId: string }
+event:
+  name: ReminderSent
+  tags: [user, item]
+  fields: { userId: string, itemId: string }
 scenarios:
   - name: Due item triggers a reminder
-    given: []
+    given:
+      - view: DueItemsView
+        data: { userId: usr_123, itemId: item_2 }
     when:
-      trigger: ToDoItemDue
-      data: { userId: usr_123, itemId: item_2 }
-    then:
       command: SendReminder
+      payload: { userId: usr_123, itemId: item_2 }
+    then:
+      event: ReminderSent
       data: { userId: usr_123, itemId: item_2 }
 ```
 
@@ -436,10 +454,11 @@ type Slice =
 2. Every referenced event/view/screen resolves in the derived catalog.
 3. No conflicting field/tag shapes for a shared name (**error**); single-occurrence names (**warn**).
 4. Each event's `tags` are a subset of its `fields`.
-5. Scenario `then` is exactly one of `event` or `exception`.
+5. Scenario `then` is exactly one of `event`, `events` or `exception`.
 6. No dependency cycles in the causal graph.
 7. Committed prose matches freshly-rendered prose (**drift error**).
-8. **TODO** — a `state_view` `sources` entry must resolve to an **internal event** in the catalog, never a bare/external name (**error**, "external data must cross via a `translation` slice"). Enforces information completeness; supersedes the briefly-considered external-source allowance.
+8. **TODO** — a `state_view` `sources` entry must resolve to an **internal event** in the catalog, never an external one (**error**, "external data must cross via a `translation` slice"). External events appear only as a translation's `external.event`. Enforces information completeness.
+9. **TODO** — `automation` and `translation` require both `command` and `event` (no event without a command).
 
 ---
 
@@ -452,11 +471,9 @@ type Slice =
   the UI contract** → unchanged screen = zero calls, fully offline.
 - **Ground-truth embed:** the canonical YAML is stamped into the `.excalidraw` so re-sync of
   your own board is deterministic; Vision is used only for foreign images.
-- **TODO — external-system swimlane primitive:** the deterministic skeleton needs a lane type for
-  `translation` external systems (one lane per distinct `external.system`, labeled with the system
-  name), with the external event placed in that lane and a boundary-crossing arrow to/from the
-  internal timeline per `direction`. No canonical external color — the lane label + crossing arrow
-  carry the meaning.
+- **TODO — external-system swimlane primitive:** one lane per distinct `external.system`, labeled
+  with the system name, holding the `external.event` as a pink sticky. From there the translation
+  renders like an automation: external event → view → ⚙️ → command → internal event.
 
 ---
 
