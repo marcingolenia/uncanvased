@@ -61,6 +61,16 @@ PAL = {
     "dup":      ("#e8590c", "#ffd8a8"),   # orange, hatched + dashed — duplicated event
     "spec":     ("#ced4da", "#f8f9fa"),   # light  — scenario frame
 }
+# Swimlane band fills — light tints behind each lane (no outline).
+LANE_BG = {
+    "actor": "#f8f9fa",   # light gray   — actor UIs / processors
+    "cmd":   "#f1f3f5",   # gray         — commands & read models
+    "event": "#fff4e6",   # light orange — event streams
+    "ext":   "#f3f0ff",   # light purple — external systems
+    "spec":  "#f8f9fa",   # light gray   — specifications
+}
+LANE_GAP = 8          # white gap between adjacent lane bands
+
 ARROW = "#495057"
 MUTED = "#868e96"
 
@@ -247,17 +257,16 @@ class Board:
         self.attach(rid, tid)
         return box
 
-    def line(self, x1, y1, x2, y2, color="#dee2e6"):
-        lid = self._id("l")
+    def band(self, x, y, w, h, bg):
+        """Borderless, lightly filled swimlane background."""
+        bid = self._id("b")
         self._base({
-            "id": lid, "type": "line",
-            "x": x1, "y": y1, "width": x2 - x1, "height": y2 - y1,
-            "strokeColor": color, "backgroundColor": "transparent",
-            "strokeStyle": "dotted", "roughness": 0, "roundness": None,
-            "points": [[0, 0], [x2 - x1, y2 - y1]], "lastCommittedPoint": None,
-            "startBinding": None, "endBinding": None,
-            "startArrowhead": None, "endArrowhead": None,
+            "id": bid, "type": "rectangle",
+            "x": x, "y": y, "width": w, "height": h,
+            "strokeColor": "transparent", "backgroundColor": bg,
+            "strokeWidth": 1, "roughness": 0, "roundness": {"type": 3},
         })
+        return self.by_id[bid]
 
     def arrow(self, src, dst, dashed=False):
         """Arrow between two box tuples (id, x, y, w, h), edge-to-edge & bound."""
@@ -780,10 +789,16 @@ def render(slices, board, fields=True, specs=True):
     board.fields = fields
 
     width = START_X + max(ncols, 1) * COL_W + 40
-    for _, title, ly in lanes:
+    bands = []
+    for n, (key, title, ly) in enumerate(lanes):
+        kind = key if key in ("cmd", "spec") else (
+            key[0] if isinstance(key, tuple) else "actor")
+        top = ly - 14 + LANE_GAP / 2
+        nxt = lanes[n + 1][2] if n + 1 < len(lanes) else y   # spec lane: resized below
+        bottom = nxt - 14 - LANE_GAP / 2
+        bands.append(board.band(LABEL_X, top, width - LABEL_X, bottom - top, LANE_BG[kind]))
         board.text(LABEL_X + 10, ly + 8, 220, 40, title,
                    color=MUTED, size=14, align="left", valign="top", family=2)
-        board.line(LABEL_X, ly - 14, width, ly - 14)
     board.text(LABEL_X + 10, TOP_Y - 54, 600, 30,
                f"Event Model  —  {len(slices)} slice(s)",
                color="#1e1e1e", size=22, align="left", family=2)
@@ -846,11 +861,14 @@ def render(slices, board, fields=True, specs=True):
 
     # ---- specifications under each slice's column
     if show_specs:
+        spec_bottom = board.lane_y["spec"] + LANE_PAD + BOX_H
         for s, p in zip(slices, plans):
             board.sid = s.get("id")
             y = board.lane_y["spec"] + LANE_PAD
             for sc in s.get("scenarios") or []:
                 y = _scenario(board, p["anchor"], y, sc) + 24
+                spec_bottom = max(spec_bottom, y)
+        bands[-1]["height"] = spec_bottom - bands[-1]["y"]
     return {"columns": ncols, "duplicates": dups, "story_hints": hints,
             "streams": [st for st in streams if st]}
 
